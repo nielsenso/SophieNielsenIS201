@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Flipping Game</title>
+    <style>
+        :root {
+            --primary-color: #ffcc00;
+            --secondary-color: #ff6600;
+            --bg-color: #f0f8ff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 {
+            margin-bottom: 0;
+            color: var(--secondary-color);
+            font-size: 2.5rem;
+            text-shadow: 2px 2px #ffcc00;
+        }
+
+        h2 {
+            margin-top: 5px;
+            font-weight: 400;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            padding: 10px;
+            background: #eee;
+            border-radius: 10px;
+            min-width: 80px;
+        }
+
+        #coin {
+            width: 140px;
+            height: 140px;
+            background-color: var(--primary-color);
+            border: 8px solid var(--secondary-color);
+            border-radius: 50%;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            box-shadow: 0 8px 0 var(--secondary-color);
+            position: relative;
+        }
+
+        #coin svg {
+            width: 80px;
+            height: 80px;
+            fill: #7a5c00;
+        }
+
+        .flipping {
+            animation: flip-animation 0.15s infinite linear;
+        }
+
+        @keyframes flip-animation {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(180deg); }
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            margin: 5px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #bbb;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-heads { background-color: #4CAF50; color: white; box-shadow: 0 4px 0 #2e6631; }
+        .btn-tails { background-color: #2196F3; color: white; box-shadow: 0 4px 0 #1565c0; }
+        .btn-reset { background-color: #f44336; color: white; box-shadow: 0 4px 0 #b71c1c; margin-top: 15px; }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            min-height: 1.5em;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Coin Flipping!</h1>
+        <h2>first to 8 points wins!</h2>
+
+        <div class="scoreboard">
+            <div class="score-box">You: <span id="user-score">0</span></div>
+            <div class="score-box">CPU: <span id="cpu-score">0</span></div>
+        </div>
+
+        <div id="coin">
+            <svg id="coin-icon" viewBox="0 0 24 24"><path d="M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z" /></svg>
+        </div>
+
+        <div id="game-controls">
+            <p><strong>Make your choice:</strong></p>
+            <button id="heads-btn" class="btn-heads" onclick="playGame('Heads')">Heads</button>
+            <button id="tails-btn" class="btn-tails" onclick="playGame('Tails')">Tails</button>
+        </div>
+
+        <div id="result-area">
+            <div id="message">Choose one to flip!</div>
+            <button id="reset-btn" class="btn-reset hidden" onclick="resetGame()">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        let userScore = 0;
+        let cpuScore = 0;
+        const winningScore = 8;
+
+        const coin = document.getElementById('coin');
+        const coinIcon = document.getElementById('coin-icon');
+        const userScoreDisplay = document.getElementById('user-score');
+        const cpuScoreDisplay = document.getElementById('cpu-score');
+        const messageDisplay = document.getElementById('message');
+        const gameControls = document.getElementById('game-controls');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // SVG Path Data
+        const icons = {
+            question: "M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z",
+        };
+
+        function setIcon(type) {
+            const path = coinIcon.querySelector('path');
+            if (type === 'Heads') {
+                // Simplified "Face" icon for Heads
+                path.setAttribute('d', "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,11A2,2 0 1,1 10,13A2,2 0 0,1 12,11M16,13A4,4 0 0,1 12,17A4,4 0 0,1 8,13H10A2,2 0 0,0 12,15A2,2 0 0,0 14,13H16Z");
+            } else if (type === 'Tails') {
+                // Simplified "Building" icon for Tails
+                path.setAttribute('d', "M12,3L2,12H5V20H19V12H22M12,17V19H10V17H12M12,14V16H10V14H12M12,11V13H10V11H12M14,17V19H16V17H14M14,14V16H16V14H14M14,11V13H16V11H14");
+            } else {
+                path.setAttribute('d', icons.question);
+            }
+        }
+
+        function playGame(userChoice) {
+            toggleButtons(true);
+            const cpuChoice = userChoice === 'Heads' ? 'Tails' : 'Heads';
+            
+            messageDisplay.innerText = `Flipping for ${userChoice}...`;
+            messageDisplay.style.color = "var(--text-color)";
+            
+            coin.classList.add('flipping');
+
+            setTimeout(() => {
+                const flipResult = Math.random() < 0.5 ? 'Heads' : 'Tails';
+                
+                coin.classList.remove('flipping');
+                setIcon(flipResult);
+
+                if (flipResult === userChoice) {
+                    userScore++;
+                    messageDisplay.innerText = `It landed on ${flipResult}! Point for you!`;
+                    messageDisplay.style.color = "#2e6631";
+                } else {
+                    cpuScore++;
+                    messageDisplay.innerText = `It landed on ${flipResult}! Point for CPU!`;
+                    messageDisplay.style.color = "#b71c1c";
+                }
+
+                updateScore();
+                
+                if (userScore >= winningScore || cpuScore >= winningScore) {
+                    checkWinner();
+                } else {
+                    toggleButtons(false);
+                }
+            }, 1000);
+        }
+
+        function updateScore() {
+            userScoreDisplay.innerText = userScore;
+            cpuScoreDisplay.innerText = cpuScore;
+        }
+
+        function checkWinner() {
+            if (userScore >= winningScore) {
+                messageDisplay.innerText = "🎉 VICTORY! You are the Coin Master!";
+                messageDisplay.style.color = "green";
+                endGame();
+            } else {
+                messageDisplay.innerText = "🤖 DEFEAT! Better luck next time!";
+                messageDisplay.style.color = "red";
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameControls.classList.add('hidden');
+            resetBtn.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            userScore = 0;
+            cpuScore = 0;
+            updateScore();
+            messageDisplay.innerText = "Choose one to flip!";
+            messageDisplay.style.color = "var(--text-color)";
+            setIcon('question');
+            gameControls.classList.remove('hidden');
+            resetBtn.classList.add('hidden');
+            toggleButtons(false);
+        }
+
+        function toggleButtons(disabled) {
+            document.getElementById('heads-btn').disabled = disabled;
+            document.getElementById('tails-btn').disabled = disabled;
+        }
+    </script>
+
+</body>
+</html>
